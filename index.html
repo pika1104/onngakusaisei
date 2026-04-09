@@ -3,133 +3,64 @@
 <head>
 <meta charset="UTF-8">
 <title>YouTubeプレイヤー</title>
-
-<style>
-body {
-  background:#111;
-  color:white;
-  font-family:sans-serif;
-  text-align:center;
-}
-.video {
-  margin:10px;
-}
-button {
-  margin:5px;
-  padding:6px 12px;
-  cursor:pointer;
-}
-iframe {
-  width:320px;
-  height:180px;
-  margin-top:10px;
-}
-</style>
-
 </head>
 <body>
 
-<h1>🎵 YouTubeプレイリスト</h1>
+<h1>YouTube検索</h1>
 
 <input id="search" placeholder="検索ワード">
-<button id="searchBtn">検索</button>
+<button onclick="searchYouTube()">検索</button>
 
-<h2>検索結果</h2>
 <div id="results"></div>
-
-<h2>プレイリスト</h2>
-<div id="playlist"></div>
-
-<h2>再生</h2>
-<iframe id="player" src="" allowfullscreen></iframe>
+<div id="error" style="color:red;"></div>
 
 <script>
 const API_KEY = "AIzaSyDlSA0xhESnwUxIGswBpF47r7Ti6X7vFIs";
 
-let playlist = [];
-
-// 検索ボタン
-document.getElementById("searchBtn").addEventListener("click", searchYouTube);
-
-// 検索処理
 async function searchYouTube() {
-  const query = document.getElementById("search").value;
-  if (!query) return;
+  const errorDiv = document.getElementById("error");
+  errorDiv.innerText = "";
 
-  const res = await fetch(
-    "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=5&q=" 
-    + encodeURIComponent(query) 
-    + "&key=" + API_KEY
-  );
+  try {
+    const query = document.getElementById("search").value;
 
-  const data = await res.json();
+    const res = await fetch(
+      "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=5&q=" 
+      + encodeURIComponent(query) 
+      + "&key=" + API_KEY
+    );
 
-  const results = document.getElementById("results");
-  results.innerHTML = "";
+    if (!res.ok) {
+      throw new Error("HTTPエラー: " + res.status);
+    }
 
-  data.items.forEach(item => {
-    const videoId = item.id.videoId;
-    const title = item.snippet.title;
+    const data = await res.json();
 
-    const div = document.createElement("div");
-    div.className = "video";
+    if (!data.items) {
+      throw new Error(JSON.stringify(data));
+    }
 
-    const p = document.createElement("p");
-    p.innerText = title;
+    const results = document.getElementById("results");
+    results.innerHTML = "";
 
-    const btn = document.createElement("button");
-    btn.innerText = "➕ 追加";
-    btn.onclick = () => addToPlaylist(videoId, title);
+    data.items.forEach(item => {
+      const videoId = item.id.videoId;
 
-    div.appendChild(p);
-    div.appendChild(btn);
-    results.appendChild(div);
-  });
-}
+      const div = document.createElement("div");
 
-// プレイリスト追加
-function addToPlaylist(id, title) {
-  playlist.push({ id, title });
-  renderPlaylist();
-}
+      div.innerHTML = `
+        <p>${item.snippet.title}</p>
+        <iframe width="300" height="170"
+          src="https://www.youtube.com/embed/${videoId}">
+        </iframe>
+      `;
 
-// 表示更新
-function renderPlaylist() {
-  const list = document.getElementById("playlist");
-  list.innerHTML = "";
+      results.appendChild(div);
+    });
 
-  playlist.forEach((item, index) => {
-    const div = document.createElement("div");
-
-    const text = document.createElement("span");
-    text.innerText = (index + 1) + ". " + item.title;
-
-    const playBtn = document.createElement("button");
-    playBtn.innerText = "▶️";
-    playBtn.onclick = () => playVideo(item.id);
-
-    const delBtn = document.createElement("button");
-    delBtn.innerText = "❌";
-    delBtn.onclick = () => removeVideo(index);
-
-    div.appendChild(text);
-    div.appendChild(playBtn);
-    div.appendChild(delBtn);
-
-    list.appendChild(div);
-  });
-}
-
-// 再生
-function playVideo(id) {
-  document.getElementById("player").src =
-    "https://www.youtube.com/embed/" + id;
-}
-
-// 削除
-function removeVideo(index) {
-  playlist.splice(index, 1);
-  renderPlaylist();
+  } catch (e) {
+    errorDiv.innerText = "エラー: " + e.message;
+  }
 }
 </script>
 
