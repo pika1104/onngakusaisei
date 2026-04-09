@@ -3,19 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <title>YouTubeプレイヤー</title>
+
 <style>
-body { background:#111; color:white; font-family:sans-serif; text-align:center; }
-.video { margin:10px; }
-button { margin:5px; padding:5px 10px; }
-iframe { width:300px; height:170px; }
+body {
+  background:#111;
+  color:white;
+  font-family:sans-serif;
+  text-align:center;
+}
+.video {
+  margin:10px;
+}
+button {
+  margin:5px;
+  padding:6px 12px;
+  cursor:pointer;
+}
+iframe {
+  width:320px;
+  height:180px;
+  margin-top:10px;
+}
 </style>
+
 </head>
 <body>
 
 <h1>🎵 YouTubeプレイリスト</h1>
 
 <input id="search" placeholder="検索ワード">
-<button onclick="searchYouTube()">検索</button>
+<button id="searchBtn">検索</button>
 
 <h2>検索結果</h2>
 <div id="results"></div>
@@ -27,12 +44,17 @@ iframe { width:300px; height:170px; }
 <iframe id="player" src="" allowfullscreen></iframe>
 
 <script>
-const API_KEY = "
-AIzaSyDlSA0xhESnwUxIGswBpF47r7Ti6X7vFIs";
+const API_KEY = "AIzaSyDlSA0xhESnwUxIGswBpF47r7Ti6X7vFIs";
+
 let playlist = [];
 
+// 検索ボタン
+document.getElementById("searchBtn").addEventListener("click", searchYouTube);
+
+// 検索処理
 async function searchYouTube() {
   const query = document.getElementById("search").value;
+  if (!query) return;
 
   const res = await fetch(
     "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=5&q=" 
@@ -41,29 +63,37 @@ async function searchYouTube() {
   );
 
   const data = await res.json();
+
   const results = document.getElementById("results");
   results.innerHTML = "";
 
   data.items.forEach(item => {
     const videoId = item.id.videoId;
+    const title = item.snippet.title;
 
     const div = document.createElement("div");
     div.className = "video";
 
-    div.innerHTML = `
-      <p>${item.snippet.title}</p>
-      <button onclick="addToPlaylist('${videoId}', \`${item.snippet.title}\`)">➕ 追加</button>
-    `;
+    const p = document.createElement("p");
+    p.innerText = title;
 
+    const btn = document.createElement("button");
+    btn.innerText = "➕ 追加";
+    btn.onclick = () => addToPlaylist(videoId, title);
+
+    div.appendChild(p);
+    div.appendChild(btn);
     results.appendChild(div);
   });
 }
 
+// プレイリスト追加
 function addToPlaylist(id, title) {
   playlist.push({ id, title });
   renderPlaylist();
 }
 
+// 表示更新
 function renderPlaylist() {
   const list = document.getElementById("playlist");
   list.innerHTML = "";
@@ -71,21 +101,32 @@ function renderPlaylist() {
   playlist.forEach((item, index) => {
     const div = document.createElement("div");
 
-    div.innerHTML = `
-      ${index + 1}. ${item.title}
-      <button onclick="playVideo('${item.id}')">▶️ 再生</button>
-      <button onclick="removeVideo(${index})">❌</button>
-    `;
+    const text = document.createElement("span");
+    text.innerText = (index + 1) + ". " + item.title;
+
+    const playBtn = document.createElement("button");
+    playBtn.innerText = "▶️";
+    playBtn.onclick = () => playVideo(item.id);
+
+    const delBtn = document.createElement("button");
+    delBtn.innerText = "❌";
+    delBtn.onclick = () => removeVideo(index);
+
+    div.appendChild(text);
+    div.appendChild(playBtn);
+    div.appendChild(delBtn);
 
     list.appendChild(div);
   });
 }
 
+// 再生
 function playVideo(id) {
   document.getElementById("player").src =
     "https://www.youtube.com/embed/" + id;
 }
 
+// 削除
 function removeVideo(index) {
   playlist.splice(index, 1);
   renderPlaylist();
