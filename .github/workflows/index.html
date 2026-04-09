@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>YouTube検索</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #111;
+      color: white;
+      text-align: center;
+    }
+    input {
+      width: 300px;
+      padding: 10px;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .video {
+      margin: 20px;
+    }
+    iframe {
+      width: 300px;
+      height: 170px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🔎 YouTube検索</h1>
+  <input id="search" placeholder="検索ワード">
+  <button onclick="searchYouTube()">検索</button>
+
+  <div id="results"></div>
+
+  <script>
+    const API_KEY = "
+AIzaSyDlSA0xhESnwUxIGswBpF47r7Ti6X7vFIs";
+
+    async function searchYouTube() {
+      const query = document.getElementById("search").value;
+      const res = await fetch(
+        `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&key=${API_KEY}&maxResults=6&type=video`
+      );
+      const data = await res.json();
+
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "";
+
+      data.items.forEach(item => {
+        const videoId = item.id.videoId;
+
+        const div = document.createElement("div");
+        div.className = "video";
+        div.innerHTML = `
+          <p>${item.snippet.title}</p>
+          <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>
+        `;
+
+        resultsDiv.appendChild(div);
+      });
+    }
+  </script>
+
+</body>
+</html>
