@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>YouTubeプレイヤー 保存版</title>
+<title>YouTubeプレイヤー 自動再生</title>
 
 <style>
 body {
@@ -21,7 +21,6 @@ input {
 button {
   margin:5px;
   padding:8px 12px;
-  cursor:pointer;
 }
 
 .player-wrapper {
@@ -49,10 +48,10 @@ button {
 </head>
 <body>
 
-<h1>🎵 YouTubeプレイヤー（保存あり）</h1>
+<h1>🎵 自動再生プレイヤー</h1>
 
 <input id="search" placeholder="検索ワード">
-<button id="searchBtn">検索</button>
+<button onclick="searchYouTube()">検索</button>
 
 <h2>検索結果</h2>
 <div id="results"></div>
@@ -62,20 +61,52 @@ button {
 
 <h2>再生</h2>
 <div class="player-wrapper">
-  <iframe id="player" src="" allowfullscreen></iframe>
+  <div id="player"></div>
 </div>
+
+<script src="https://www.youtube.com/iframe_api"></script>
 
 <script>
 const API_KEY = "AIzaSyDlSA0xhESnwUxIGswBpF47r7Ti6X7vFIs";
 
 let playlist = JSON.parse(localStorage.getItem("playlist")) || [];
+let currentIndex = 0;
+let player;
 
 // 初期表示
 renderPlaylist();
 
-// 検索
-document.getElementById("searchBtn").addEventListener("click", searchYouTube);
+// YouTube API準備
+function onYouTubeIframeAPIReady() {
+  player = new YT.Player('player', {
+    height: '100%',
+    width: '100%',
+    events: {
+      'onStateChange': onPlayerStateChange
+    }
+  });
+}
 
+// 再生終了検知
+function onPlayerStateChange(event) {
+  if (event.data === YT.PlayerState.ENDED) {
+    nextVideo();
+  }
+}
+
+// 次の曲
+function nextVideo() {
+  if (playlist.length === 0) return;
+
+  currentIndex++;
+  if (currentIndex >= playlist.length) {
+    currentIndex = 0; // ループ
+  }
+
+  playVideo(playlist[currentIndex].id);
+}
+
+// 検索
 async function searchYouTube() {
   const query = document.getElementById("search").value;
   if (!query) return;
@@ -109,7 +140,7 @@ async function searchYouTube() {
   });
 }
 
-// 保存付き追加
+// 追加
 function addToPlaylist(id, title) {
   playlist.push({ id, title });
   savePlaylist();
@@ -134,7 +165,10 @@ function renderPlaylist() {
 
     const playBtn = document.createElement("button");
     playBtn.innerText = "▶️";
-    playBtn.onclick = () => playVideo(item.id);
+    playBtn.onclick = () => {
+      currentIndex = index;
+      playVideo(item.id);
+    };
 
     const delBtn = document.createElement("button");
     delBtn.innerText = "❌";
@@ -150,8 +184,7 @@ function renderPlaylist() {
 
 // 再生
 function playVideo(id) {
-  document.getElementById("player").src =
-    "https://www.youtube.com/embed/" + id;
+  player.loadVideoById(id);
 }
 
 // 削除
